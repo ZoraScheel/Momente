@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gute Dinge">
+<meta name="theme-color" content="#f7f7f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
+<title>gute dinge des tages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f7f7;
+  --ink: #111111;
+  --soft: #9b9b9b;
+  --line: #e2e2e2;
+  --head: 133px;                       /* Höhe des Kopfbereichs */
+  --cols: minmax(16px, 1fr) 92px 90px minmax(0, 365px) minmax(0, 365px) 92px minmax(16px, 1fr);
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #111111; --ink: #ececec; --soft: #777777; --line: #2a2a2a; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #111111; --ink: #ececec; --soft: #777777; --line: #2a2a2a; color-scheme: dark; }
+*, *::before, *::after { box-sizing: inherit; }
+[hidden] { display: none !important; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px; line-height: 1.25; -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+
+.page { position: relative; min-height: 100vh; padding-bottom: 80px; }
+.grid { display: grid; grid-template-columns: var(--cols); }
+.grid > * { padding: 0 16px 0 8px; min-width: 0; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .02em; }
+
+/* Haarlinien – liegen als Raster hinter allem */
+.rules { position: absolute; inset: 0; pointer-events: none; }
+.rules i { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+.rules .r-date { top: var(--head); }
+
+/* Kopf */
+.top { height: var(--head); border-bottom: 1px solid var(--line); }
+.top .title { grid-column: 2 / 4; padding-top: 8px; }
+.top .compose { grid-column: 4 / 6; align-self: end; padding-bottom: 10px; }
+.top .count { grid-column: 6 / 8; padding-top: 8px; text-align: center; }
+#text {
+  width: 100%; border: 0; background: transparent; padding: 0; border-radius: 0;
+  font-size: 22px; letter-spacing: -.01em; -webkit-appearance: none;
+}
+#text::placeholder { color: var(--soft); }
+#text:focus { outline: none; }
+
+/* Navigation */
+.nav { display: flex; gap: 12px; margin-top: 10px; font-size: 11px; }
+.nav a { color: var(--soft); text-decoration: none; }
+.nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.top .backtitle { grid-column: 4 / 6; align-self: end; padding-bottom: 10px; font-size: 22px; letter-spacing: -.01em; }
+.back-empty { grid-column: 4 / 6; color: var(--soft); padding-top: 48px; }
+
+/* Werkzeugzeile */
+.tools > div { border-bottom: 1px solid var(--line); height: 28px; display: flex; align-items: center; font-size: 11px; }
+.tools .when { grid-column: 4; gap: 14px; }
+.tools .hint { grid-column: 5; justify-content: flex-end; align-items: flex-start; padding-top: 2px; color: var(--soft); border-left: 1px solid var(--line); }
+.when button { border: 0; background: none; padding: 0; cursor: pointer; color: var(--soft); }
+.when button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.when .other { position: relative; }
+/* unsichtbares Datumsfeld – öffnet nur den Kalender des Systems */
+.when input[type="date"] { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; border: 0; padding: 0; }
+.status { grid-column: 4 / 6; font-size: 11px; color: var(--soft); min-height: 14px; padding-top: 6px; }
+
+/* Spaltenköpfe */
+.heads { padding: 66px 0 0; }
+.heads .a { grid-column: 4; }
+.heads .b { grid-column: 5; font-style: italic; }
+
+/* Liste */
+.month { padding-top: 48px; }
+.month .label { grid-column: 2; }
+.day { padding-top: 26px; }
+.month + .day { padding-top: 32px; }
+.day .date { grid-column: 3; font-size: 11px; color: var(--soft); padding-top: 2px; white-space: nowrap; }
+.day.is-today .date { color: var(--ink); }
+.day .col { grid-column: 4; }
+.day .col + .col { grid-column: 5; }
+.col .line { margin: 0; overflow-wrap: anywhere; }
+.col button.text { all: unset; white-space: pre-wrap; }
+.col.mine button.text { cursor: pointer; }
+.col.mine button.text:hover { color: var(--soft); }
+.col .none { color: var(--line); }
+.col textarea.edit {
+  display: block; width: 100%; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0;
+  background: transparent; padding: 0 0 2px; resize: none; overflow: hidden; line-height: inherit; -webkit-appearance: none;
+}
+.col textarea.edit:focus { outline: none; }
+.actions { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; font-style: italic; }
+.actions button { border: 0; background: none; padding: 0; cursor: pointer; color: var(--soft); }
+.actions .save { color: var(--ink); }
+.actions .del { margin-left: auto; }
+.actions .del.sure { color: var(--ink); }
+.empty { grid-column: 4 / 6; color: var(--soft); padding-top: 32px; }
+
+/* Einrichtung */
+.setup { padding-top: 48px; }
+.setup .box { grid-column: 4 / 6; max-width: 360px; }
+.setup .lead { font-size: 22px; margin: 0 0 32px; }
+.setup .label { display: block; margin: 0 0 8px; }
+.setup .who { display: flex; gap: 16px; margin-bottom: 28px; }
+.setup .who button { border: 0; background: none; padding: 0; cursor: pointer; color: var(--soft); font-size: 16px; }
+.setup .who button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+.setup input { width: 100%; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; padding: 0 0 6px; -webkit-appearance: none; }
+.setup input:focus { outline: none; border-bottom-color: var(--ink); }
+.setup .connect { margin-top: 24px; border: 0; background: none; padding: 0; font-style: italic; cursor: pointer; }
+.setup .msg { font-size: 11px; color: var(--soft); margin-top: 12px; min-height: 14px; }
+
+footer.grid { padding-top: 64px; font-size: 11px; color: var(--soft); }
+footer .f { grid-column: 4 / 6; display: flex; justify-content: space-between; }
+footer button { border: 0; background: none; padding: 0; color: var(--soft); cursor: pointer; font-size: 11px; }
+
+/* Handy */
+@media (max-width: 820px) {
+  :root { --cols: 74px minmax(0, 1fr) minmax(0, 1fr); --head: auto; }
+  .rules { display: none; }
+  .top { height: auto; display: grid; grid-template-columns: 1fr auto; row-gap: 40px; padding: 10px 0 10px; }
+  .top .title { grid-column: 1; grid-row: 1; padding-top: 0; }
+  .top .count { grid-column: 2; grid-row: 1; padding-top: 0; text-align: right; }
+  .top .compose, .top .backtitle { grid-column: 1 / -1; grid-row: 2; }
+  .top { row-gap: 24px; }
+  .nav { margin-top: 0; gap: 4px; }
+  .nav a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 8px; }
+  .nav a:first-child { padding-left: 0; }
+  .back-empty { grid-column: 1 / -1; }
+  #text { font-size: 19px; }
+  .tools .when { grid-column: 1 / 3; }
+  .tools .hint { display: none; }
+  .tools { border-bottom: 1px solid var(--line); }
+  .tools > div { border-bottom: 0; }
+  .status, .empty, .setup .box, footer .f { grid-column: 1 / -1; }
+  .heads { padding-top: 40px; }
+  .heads .a { grid-column: 2; }
+  .heads .b { grid-column: 3; }
+  .month .label { grid-column: 1 / -1; }
+  .day .date { grid-column: 1; }
+  .day .col { grid-column: 2; }
+  .day .col + .col { grid-column: 3; }
+  .grid { padding-left: 14px; padding-right: 14px; }
+  .grid > * { padding: 0 10px 0 0; }
+  .top > * { padding: 0; }
+  .tools > div { padding: 0; }
+
+  /* Touch-Flächen: mindestens 44 px hoch */
+  .tools > div { height: 44px; }
+  .tools .when { gap: 6px; font-size: 12px; }
+  .when button, .when .other { display: flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 8px; }
+  .when > button:first-child { padding-left: 0; }
+  .when .other button { padding: 0; min-height: 44px; }
+
+  .col.mine button.text { display: block; padding: 14px 0; margin: -14px 0; }
+  .col.mine .none { display: block; }
+
+  .actions { gap: 4px; margin-top: 2px; font-size: 12px; }
+  .actions button { min-height: 44px; padding: 0 10px; }
+  .actions button:first-child { padding-left: 0; }
+  .actions .del { padding-right: 0; }
+
+
+  .setup .who { gap: 8px; }
+  .setup .who button { min-height: 44px; padding: 0 12px; }
+  .setup .who button:first-child { padding-left: 0; }
+  .setup .connect { min-height: 44px; padding: 0 12px 0 0; margin-top: 16px; }
+  footer button { min-height: 44px; padding: 0 0 0 16px; }
+  footer .f { align-items: center; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="rules grid" aria-hidden="true"></div>
+
+  <header class="top grid">
+    <div class="title">
+      <span class="label">gute dinge des tages</span>
+      <nav class="nav" aria-label="Seiten">
+        <a href="#" data-view="list">einträge</a>
+        <a href="#rueckblick" data-view="back">rückblick</a>
+      </nav>
+    </div>
+    <div class="backtitle" id="backtitle" hidden>an diesem tag</div>
+    <div class="compose" id="compose">
+      <input type="text" id="text" placeholder="was war heute schön?" autocomplete="off" enterkeyhint="done" aria-label="Moment eintragen">
+    </div>
+    <div class="count label" id="count">0 momente</div>
+  </header>
+
+  <div id="app">
+    <div class="tools grid" id="tools">
+      <div class="when" role="group" aria-label="Tag">
+        <button type="button" data-ago="0" aria-pressed="true">heute</button>
+        <button type="button" data-ago="1" aria-pressed="false">gestern</button>
+        <span class="other"><button type="button" id="otherBtn" aria-pressed="false">anderer tag</button><input type="date" id="datepick" tabindex="-1" aria-hidden="true"></span>
+      </div>
+      <div class="hint">enter zum speichern</div>
+    </div>
+    <div class="grid"><div class="status" id="status" aria-live="polite"></div></div>
+
+    <div class="heads grid">
+      <div class="a label" id="headA"></div>
+      <div class="b" id="headB"></div>
+    </div>
+    <div id="list"></div>
+
+    <footer class="grid"><div class="f"><span id="mode"></span><button type="button" id="logout">abmelden</button></div></footer>
+  </div>
+
+  <section class="setup grid" id="setup" hidden>
+    <div class="box">
+      <p class="lead">einmal einrichten</p>
+      <p class="label">wer bist du?</p>
+      <div class="who" id="who"></div>
+      <label class="label" for="token">zugangsschlüssel</label>
+      <input type="password" id="token" autocomplete="off" placeholder="github_pat_…">
+      <button type="button" class="connect" id="connect">verbinden</button>
+      <div class="msg" id="setupStatus" aria-live="polite"></div>
+    </div>
+  </section>
+</div>
+
+<script src="store.js"></script>
+<script>
+function pad(n) { return String(n).padStart(2, "0"); }
+function ymd(x) { return x.getFullYear() + "-" + pad(x.getMonth() + 1) + "-" + pad(x.getDate()); }
+function ago(n) { const x = new Date(); x.setDate(x.getDate() - n); return ymd(x); }
+function shortDate(v) { const [, m, d] = v.split("-"); return d + "." + m + "."; }
+function dayLabel(v) {
+  const wd = new Date(v + "T12:00").toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
+  return wd + " " + shortDate(v);
+}
+
+const $ = (s) => document.querySelector(s);
+const textEl = $("#text"), listEl = $("#list"), statusEl = $("#status"), dateEl = $("#datepick");
+let rows = [], selected = ago(0), editing = null;
+const [A, B] = Store.people;                 // A immer links, B immer rechts
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+/* ---------- Raster-Linien ---------- */
+(function drawRules() {
+  const r = $(".rules");
+  // eine leere Zelle pro Spalte; Linien sitzen links von Datum, Anne und rechter Spalte
+  ["", "", "r-date", "r-a", "", "r-right", ""].forEach((c) => { const i = el("div"); i.style.position = "relative"; i.style.padding = "0"; if (c) i.appendChild(el("i", c)); r.appendChild(i); });
+})();
+
+/* ---------- Tag wählen ---------- */
+dateEl.max = ago(0);
+function setDate(v) {
+  selected = v;
+  document.querySelectorAll(".when button[data-ago]").forEach((b) =>
+    b.setAttribute("aria-pressed", String(ago(+b.dataset.ago) === v)));
+  const custom = v !== ago(0) && v !== ago(1);
+  $("#otherBtn").setAttribute("aria-pressed", String(custom));
+  $("#otherBtn").textContent = custom ? shortDate(v) : "anderer tag";
+  textEl.placeholder = v === ago(0) ? "was war heute schön?" : v === ago(1) ? "was war gestern schön?" : "was war am " + shortDate(v) + " schön?";
+}
+document.querySelectorAll(".when button[data-ago]").forEach((b) =>
+  b.addEventListener("click", () => { setDate(ago(+b.dataset.ago)); textEl.focus(); }));
+dateEl.addEventListener("change", () => { if (dateEl.value) { setDate(dateEl.value); textEl.focus(); } });
+
+// "anderer tag" öffnet den Kalender von macOS bzw. iOS
+$("#otherBtn").addEventListener("click", () => {
+  dateEl.value = selected;
+  try {
+    if (typeof dateEl.showPicker === "function") { dateEl.showPicker(); return; }
+  } catch (e) {}
+  dateEl.focus(); dateEl.click();          // ältere Browser
+});
+
+/* ---------- Eintragen ---------- */
+textEl.addEventListener("keydown", async (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const text = textEl.value.trim();
+  if (!text || !Store.ready()) return;
+  textEl.disabled = true;
+  status("speichere …");
+  try {
+    rows = await Store.add({ date: selected, text });
+    textEl.value = "";
+    setDate(ago(0));
+    status(Store.pending() ? "ohne netz gemerkt – wird gesendet, sobald du wieder verbindung hast" : "gespeichert");
+    render();
+  } catch (err) {
+    status(errText(err, "nicht gespeichert – bitte noch einmal"));
+  } finally {
+    textEl.disabled = false; textEl.focus();
+  }
+});
+
+let statusTimer;
+function waiting() {
+  const n = Store.pending();
+  return !n ? "" : n === 1 ? "1 eintrag wartet auf verbindung" : n + " einträge warten auf verbindung";
+}
+function status(msg) {
+  statusEl.textContent = msg;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => (statusEl.textContent = waiting()), 2500);
+}
+function errText(e, fallback) {
+  if (e && e.code === "auth") return e.message + " – bitte neu einrichten";
+  if (e && e.code === "offline") return "keine verbindung";
+  if (e && e.code === "too_big") return e.message;
+  return fallback;
+}
+
+/* ---------- Bearbeiten ---------- */
+function grow(ta) { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }
+
+// Bearbeiten-Modus für alle Momente einer Person an einem Tag
+function editor(date, text) {
+  const box = el("div", "editbox");
+  const ta = el("textarea", "edit");
+  ta.value = text; ta.rows = 1; ta.setAttribute("aria-label", "Tag bearbeiten"); ta.setAttribute("enterkeyhint", "done");
+  const actions = el("div", "actions");
+  const save = el("button", "save", "speichern"), cancel = el("button", "", "abbrechen"), del = el("button", "del", "löschen");
+  [save, cancel, del].forEach((b) => (b.type = "button"));
+
+  async function write(value, done) {
+    try { rows = await Store.setDay(date, value); status(Store.pending() ? "ohne netz gemerkt – wird später gesendet" : done); }
+    catch (e) { status(errText(e, "nicht gespeichert – bitte noch einmal")); return; }
+    stop();
+  }
+  function commit() {
+    const value = ta.value.trim();
+    if (value === text) { stop(); return; }
+    write(value, value ? "geändert" : "gelöscht");
+  }
+  function stop() { editing = null; render(); }
+
+  ta.addEventListener("input", () => grow(ta));
+  ta.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
+    if (e.key === "Escape") { e.preventDefault(); stop(); }
+  });
+  save.addEventListener("click", commit);
+  cancel.addEventListener("click", stop);
+  del.addEventListener("click", () => {
+    if (!del.classList.contains("sure")) { del.classList.add("sure"); del.textContent = "wirklich löschen?"; return; }
+    write("", "gelöscht");
+  });
+  actions.append(save, cancel, del);
+  box.append(ta, actions);
+  requestAnimationFrame(() => { grow(ta); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); });
+  return box;
+}
+
+/* ---------- Liste ---------- */
+// Alle Momente einer Person an einem Tag als eine Zeile, mit Komma getrennt
+function column(date, items, who, readonly) {
+  const mine = !readonly && who === Store.me();
+  const col = el("div", "col" + (mine ? " mine" : ""));
+  const text = items.filter((m) => m.author === who).map((m) => m.text).join(", ");
+  if (mine && editing === date) { col.appendChild(editor(date, text)); return col; }
+  if (!text) {
+    col.appendChild(el("span", "none", "—"));
+    return col;
+  }
+  const t = el("button", "text", text);
+  t.type = "button";
+  if (mine) { t.title = "Tippen zum Bearbeiten"; t.addEventListener("click", () => { editing = date; render(); }); }
+  else t.tabIndex = -1;
+  const p = el("p", "line"); p.appendChild(t); col.appendChild(p);
+  return col;
+}
+
+/* ---------- Seiten ---------- */
+let view = location.hash === "#rueckblick" ? "back" : "list";
+function showView() {
+  view = location.hash === "#rueckblick" ? "back" : "list";
+  editing = null;
+  document.querySelectorAll(".nav a").forEach((a) => {
+    if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  const back = view === "back";
+  $("#compose").hidden = back; $("#tools").hidden = back; $("#backtitle").hidden = !back;
+  render();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", showView);
+
+/* ---------- Rückblick: dieser Kalendertag in früheren Monaten und Jahren ---------- */
+function renderBack() {
+  const today = new Date();
+  const sections = [];
+  const month = new Date(today); month.setMonth(today.getMonth() - 1);
+  if (month.getDate() === today.getDate()) sections.push(["vor einem monat", ymd(month)]);
+  const oldest = rows.reduce((min, r) => (r.date < min ? r.date : min), ymd(today));
+  for (let y = 1; ; y++) {
+    const d = new Date(today); d.setFullYear(today.getFullYear() - y);
+    if (ymd(d) < oldest) break;
+    if (d.getDate() !== today.getDate()) continue;      // z. B. 29. Februar
+    sections.push([y === 1 ? "vor einem jahr" : "vor " + y + " jahren", ymd(d)]);
+  }
+  let shown = 0;
+  sections.forEach(([label, key]) => {
+    const items = rows.filter((r) => r.date === key);
+    if (!items.length) return;
+    const head = el("div", "month grid"); head.appendChild(el("div", "label", label));
+    const row = el("section", "day grid");
+    row.appendChild(el("div", "date", dayLabel(key) + key.slice(2, 4)));   // mit jahr, z. B. "So 05.10.25"
+    row.append(column(key, items, A, true), column(key, items, B, true));
+    listEl.append(head, row);
+    shown++;
+  });
+  if (!shown) {
+    const g = el("div", "grid");
+    g.appendChild(el("div", "back-empty", "an diesem tag gibt es noch keine erinnerungen. in einem monat steht hier der erste rückblick."));
+    listEl.appendChild(g);
+  }
+}
+
+function render() {
+  listEl.textContent = "";
+  // gezählt wird jeder mit Komma getrennte Moment einzeln
+  const n = rows.reduce((sum, r) => sum + r.text.split(",").filter((s) => s.trim()).length, 0);
+  $("#count").textContent = n + (n === 1 ? " moment" : " momente");
+  if (view === "back") { renderBack(); return; }
+  const byDay = new Map();
+  rows.forEach((r) => { if (!byDay.has(r.date)) byDay.set(r.date, []); byDay.get(r.date).push(r); });
+  if (!byDay.has(ago(0))) byDay.set(ago(0), []);
+  const days = [...byDay.keys()].sort().reverse();
+
+  let lastMonth = "";
+  days.forEach((key) => {
+    const month = key.slice(0, 7);
+    if (month !== lastMonth) {
+      const [y, mo] = month.split("-");
+      const row = el("div", "month grid");
+      row.appendChild(el("div", "label", new Date(+y, +mo - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" })));
+      listEl.appendChild(row);
+      lastMonth = month;
+    }
+    const items = byDay.get(key).slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const row = el("section", "day grid" + (key === ago(0) ? " is-today" : ""));
+    row.appendChild(el("div", "date", dayLabel(key)));
+    row.append(column(key, items, A), column(key, items, B));
+    listEl.appendChild(row);
+  });
+  if (!rows.length) { const g = el("div", "grid"); g.appendChild(el("div", "empty", "noch nichts eingetragen.")); listEl.appendChild(g); }
+}
+
+async function refresh(quiet) {
+  if (editing) return;
+  const before = Store.pending();
+  try {
+    rows = await Store.load(); render();
+    if (before && !Store.pending()) status("alles gesendet");
+  } catch (e) {
+    if (e && e.rows) { rows = e.rows; render(); }        // offline: letzter bekannter Stand
+    if (!quiet) status(errText(e, "konnte nicht laden"));
+    else if (!statusEl.textContent) statusEl.textContent = waiting();
+    if (e && e.code === "auth") { Store.logout(); showSetup(); }
+  }
+}
+
+/* ---------- Einrichtung ---------- */
+let chosen = "";
+function showSetup() {
+  $("#app").hidden = true; $("#setup").hidden = false;
+  textEl.disabled = true;
+  const who = $("#who"); who.textContent = "";
+  Store.people.forEach((p) => {
+    const b = el("button", "", p); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => { chosen = p; who.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
+    who.appendChild(b);
+  });
+}
+$("#connect").addEventListener("click", async () => {
+  const token = $("#token").value.trim(), msg = $("#setupStatus");
+  if (!chosen) { msg.textContent = "bitte wähle deinen namen"; return; }
+  if (!token) { msg.textContent = "bitte den zugangsschlüssel einfügen"; return; }
+  msg.textContent = "verbinde …";
+  try { await Store.setup({ token, me: chosen }); $("#token").value = ""; msg.textContent = ""; startApp(); }
+  catch (e) { msg.textContent = errText(e, "verbindung fehlgeschlagen"); }
+});
+$("#logout").addEventListener("click", () => {
+  if (Store.isDemo || !confirm("auf diesem gerät abmelden?")) return;
+  Store.logout(); showSetup();
+});
+
+/* ---------- Start ---------- */
+let started = false;
+function startApp() {
+  $("#setup").hidden = true; $("#app").hidden = false; textEl.disabled = false;
+  $("#headA").textContent = A; $("#headB").textContent = B;
+  $("#mode").textContent = Store.isDemo ? "demo – nichts wird gespeichert" : "angemeldet als " + Store.me();
+  $("#logout").hidden = Store.isDemo;
+  setDate(ago(0)); rows = Store.snapshot(); showView(); refresh(true);
+  if (started) return;
+  started = true;
+  window.addEventListener("online", () => refresh(true));   // netz ist zurück → wartendes senden
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(true); });
+  setInterval(() => { if (!document.hidden) refresh(true); }, 60000);
+}
+if (Store.ready()) startApp(); else showSetup();
+
+// App-Dateien fürs Öffnen ohne Netz auf dem Gerät speichern (nur über https, also auf GitHub Pages)
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
