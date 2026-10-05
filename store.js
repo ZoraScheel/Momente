@@ -13,7 +13,7 @@
    ===================================================================== */
 
 const CONFIG = {
-  owner: "",                   // dein GitHub-Benutzername, z. B. "anne-m"
+  owner: "ZoraScheel",                   // dein GitHub-Benutzername, z. B. "anne-m"
   repo: "momente-daten",       // Name des PRIVATEN Repositorys mit den Daten
   branch: "main",
   path: "moments.json",
