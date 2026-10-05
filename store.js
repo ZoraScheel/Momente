@@ -13,7 +13,7 @@
    ===================================================================== */
 
 const CONFIG = {
-  owner: "ZoraScheel",                   // dein GitHub-Benutzername, z. B. "anne-m"
+  owner: "",                   // dein GitHub-Benutzername, z. B. "anne-m"
   repo: "momente-daten",       // Name des PRIVATEN Repositorys mit den Daten
   branch: "main",
   path: "moments.json",
@@ -97,8 +97,14 @@ const Store = (() => {
     return all;
   }
 
+  // Ein Moment pro Zeile: bleibt lesbar, ist aber viel kleiner als eingerückt
+  function serialize(moments) {
+    const sorted = moments.slice().sort((a, b) => (a.date + a.author).localeCompare(b.date + b.author));
+    return '{"version":1,"moments":[\n' + sorted.map((m) => JSON.stringify(m)).join(",\n") + "\n]}\n";
+  }
+
   /* ---------- GitHub ---------- */
-  async function request(method, body) {
+  async function request(method, body, accept) {
     const url = API + "/repos/" + CONFIG.owner + "/" + CONFIG.repo + "/contents/" + CONFIG.path +
       (method === "GET" ? "?ref=" + encodeURIComponent(CONFIG.branch) : "");
     if (typeof navigator !== "undefined" && navigator.onLine === false) throw fail("offline", "keine verbindung");
@@ -109,7 +115,7 @@ const Store = (() => {
         cache: "no-store",
         headers: {
           Authorization: "Bearer " + local.get(KEY_TOKEN),
-          Accept: "application/vnd.github+json",
+          Accept: accept || "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
           ...(body ? { "Content-Type": "application/json" } : {}),
         },
@@ -129,9 +135,15 @@ const Store = (() => {
     if (res.status === 404) { sha = null; data = { version: 1, moments: [] }; saveCache(); return; }
     if (!res.ok) throw fail("network", "laden fehlgeschlagen");
     const json = await res.json();
-    if (!json.content && json.size > 0) throw fail("too_big", "datei zu groß (über 1 mb)");
     sha = json.sha;
-    const parsed = json.content ? JSON.parse(decode(json.content)) : {};
+    let text = json.content ? decode(json.content) : "";
+    // Ab 1 MB liefert GitHub den Inhalt nicht mehr mit – dann als Rohtext nachladen (bis 100 MB)
+    if (!text && json.size > 0) {
+      const raw = await request("GET", null, "application/vnd.github.raw+json");
+      if (!raw.ok) throw fail("network", "laden fehlgeschlagen");
+      text = await raw.text();
+    }
+    const parsed = text ? JSON.parse(text) : {};
     data = { version: 1, moments: Array.isArray(parsed.moments) ? parsed.moments : [] };
     saveCache();
   }
@@ -139,7 +151,7 @@ const Store = (() => {
   async function push(msg) {
     const res = await request("PUT", {
       message: msg,
-      content: encode(JSON.stringify(data, null, 2) + "\n"),
+      content: encode(serialize(data.moments)),
       branch: CONFIG.branch,
       ...(sha ? { sha } : {}),
     });
