@@ -62,16 +62,17 @@ button, input, textarea { font: inherit; color: inherit; }
 #text:focus { outline: none; }
 
 /* Navigation */
-.nav { display: flex; gap: 12px; margin-top: 10px; font-size: 11px; }
+
 .nav a { color: var(--soft); text-decoration: none; }
 .nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .top .backtitle { grid-column: 4 / 6; align-self: end; padding-bottom: 10px; font-size: 22px; letter-spacing: -.01em; }
 .back-empty { grid-column: 4 / 6; color: var(--soft); padding-top: 48px; }
 
 /* Werkzeugzeile */
-.tools > div { border-bottom: 1px solid var(--line); height: 28px; display: flex; align-items: center; font-size: 11px; }
+.tools > * { border-bottom: 1px solid var(--line); height: 28px; display: flex; align-items: center; font-size: 11px; }
 .tools .when { grid-column: 4; gap: 14px; }
-.tools .hint { grid-column: 5; justify-content: flex-end; align-items: flex-start; padding-top: 2px; color: var(--soft); border-left: 1px solid var(--line); }
+.tools .nav { grid-column: 5; justify-content: flex-end; gap: 12px; border-left: 1px solid var(--line); }
+.tools .when.off > * { visibility: hidden; }     /* auf der rückblick-seite: zeile bleibt, auswahl verschwindet */
 .when button { border: 0; background: none; padding: 0; cursor: pointer; color: var(--soft); }
 .when button[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .when .other { position: relative; }
@@ -85,8 +86,10 @@ button, input, textarea { font: inherit; color: inherit; }
 .heads .b { grid-column: 5; font-style: italic; }
 
 /* Liste */
+/* Monat: Name, darunter eine Linie, die den Monat abgrenzt */
 .month { padding-top: 48px; }
-.month .label { grid-column: 2; }
+.month .label { grid-column: 2; grid-row: 1; padding-bottom: 8px; }
+.month .rule { grid-column: 2 / 6; grid-row: 1; align-self: end; border-bottom: 1px solid var(--line); padding: 0; }
 .day { padding-top: 26px; }
 .month + .day { padding-top: 32px; }
 .day .date { grid-column: 3; font-size: 11px; color: var(--soft); padding-top: 2px; white-space: nowrap; }
@@ -135,31 +138,30 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
   .top .title { grid-column: 1; grid-row: 1; padding-top: 0; }
   .top .count { grid-column: 2; grid-row: 1; padding-top: 0; text-align: right; }
   .top .compose, .top .backtitle { grid-column: 1 / -1; grid-row: 2; }
-  .top { row-gap: 24px; }
-  .nav { margin-top: 0; gap: 4px; }
-  .nav a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 8px; }
-  .nav a:first-child { padding-left: 0; }
+  .tools .nav { grid-column: 3; gap: 0; border-left: 0; }
+  .nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 6px; }
+  .nav a:last-child { padding-right: 0; }
   .back-empty { grid-column: 1 / -1; }
   #text { font-size: 19px; }
   .tools .when { grid-column: 1 / 3; }
-  .tools .hint { display: none; }
   .tools { border-bottom: 1px solid var(--line); }
-  .tools > div { border-bottom: 0; }
+  .tools > * { border-bottom: 0; }
   .status, .empty, .setup .box, footer .f { grid-column: 1 / -1; }
   .heads { padding-top: 40px; }
   .heads .a { grid-column: 2; }
   .heads .b { grid-column: 3; }
   .month .label { grid-column: 1 / -1; }
+  .month .rule { grid-column: 1 / -1; }
   .day .date { grid-column: 1; }
   .day .col { grid-column: 2; }
   .day .col + .col { grid-column: 3; }
   .grid { padding-left: 14px; padding-right: 14px; }
   .grid > * { padding: 0 10px 0 0; }
   .top > * { padding: 0; }
-  .tools > div { padding: 0; }
+  .tools > * { padding: 0; }
 
   /* Touch-Flächen: mindestens 44 px hoch */
-  .tools > div { height: 44px; }
+  .tools > * { height: 44px; }
   .tools .when { gap: 6px; font-size: 12px; }
   .when button, .when .other { display: flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 8px; }
   .when > button:first-child { padding-left: 0; }
@@ -188,13 +190,7 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
   <div class="rules grid" aria-hidden="true"></div>
 
   <header class="top grid">
-    <div class="title">
-      <span class="label">gute dinge des tages</span>
-      <nav class="nav" aria-label="Seiten">
-        <a href="#" data-view="list">einträge</a>
-        <a href="#rueckblick" data-view="back">rückblick</a>
-      </nav>
-    </div>
+    <div class="title label">gute dinge des tages</div>
     <div class="backtitle" id="backtitle" hidden>an diesem tag</div>
     <div class="compose" id="compose">
       <input type="text" id="text" placeholder="was war heute schön?" autocomplete="off" enterkeyhint="done" aria-label="Moment eintragen">
@@ -209,7 +205,10 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
         <button type="button" data-ago="1" aria-pressed="false">gestern</button>
         <span class="other"><button type="button" id="otherBtn" aria-pressed="false">anderer tag</button><input type="date" id="datepick" tabindex="-1" aria-hidden="true"></span>
       </div>
-      <div class="hint">enter zum speichern</div>
+      <nav class="nav" aria-label="Seiten">
+        <a href="#" data-view="list">einträge</a>
+        <a href="#rueckblick" data-view="back">rückblick</a>
+      </nav>
     </div>
     <div class="grid"><div class="status" id="status" aria-live="polite"></div></div>
 
@@ -281,13 +280,25 @@ document.querySelectorAll(".when button[data-ago]").forEach((b) =>
 dateEl.addEventListener("change", () => { if (dateEl.value) { setDate(dateEl.value); textEl.focus(); } });
 
 // "anderer tag" öffnet den Kalender von macOS bzw. iOS
-$("#otherBtn").addEventListener("click", () => {
+let pickerOpen = false;
+function closePicker() { if (pickerOpen) { pickerOpen = false; dateEl.blur(); } }
+$("#otherBtn").addEventListener("click", (e) => {
+  if (pickerOpen) { closePicker(); return; }             // zweiter klick schließt
   dateEl.value = selected;
+  dateEl.focus({ preventScroll: true });
+  pickerOpen = true;
   try {
     if (typeof dateEl.showPicker === "function") { dateEl.showPicker(); return; }
-  } catch (e) {}
-  dateEl.focus(); dateEl.click();          // ältere Browser
+  } catch (err) {}
+  dateEl.click();                                         // ältere browser
 });
+// klick oder tipp irgendwo anders schließt den kalender
+document.addEventListener("pointerdown", (e) => {
+  if (pickerOpen && !e.target.closest(".other")) closePicker();
+}, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePicker(); });
+dateEl.addEventListener("blur", () => { pickerOpen = false; });
+dateEl.addEventListener("change", () => { pickerOpen = false; });
 
 /* ---------- Eintragen ---------- */
 textEl.addEventListener("keydown", async (e) => {
@@ -396,10 +407,15 @@ function showView() {
     if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
   const back = view === "back";
-  $("#compose").hidden = back; $("#tools").hidden = back; $("#backtitle").hidden = !back;
+  $("#compose").hidden = back; $("#backtitle").hidden = !back;
+  $(".tools .when").classList.toggle("off", back);
   render();
   window.scrollTo(0, 0);
 }
+document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
+  // "einträge" mit leerem hash: nicht zum seitenanfang springen lassen, sondern ansicht wechseln
+  if (a.dataset.view === "list") { e.preventDefault(); history.replaceState(null, "", location.pathname + location.search); showView(); }
+}));
 window.addEventListener("hashchange", showView);
 
 /* ---------- Rückblick: dieser Kalendertag in früheren Monaten und Jahren ---------- */
@@ -419,7 +435,7 @@ function renderBack() {
   sections.forEach(([label, key]) => {
     const items = rows.filter((r) => r.date === key);
     if (!items.length) return;
-    const head = el("div", "month grid"); head.appendChild(el("div", "label", label));
+    const head = el("div", "month grid"); head.append(el("div", "label", label), el("div", "rule"));
     const row = el("section", "day grid");
     row.appendChild(el("div", "date", dayLabel(key) + key.slice(2, 4)));   // mit jahr, z. B. "So 05.10.25"
     row.append(column(key, items, A, true), column(key, items, B, true));
@@ -450,7 +466,7 @@ function render() {
     if (month !== lastMonth) {
       const [y, mo] = month.split("-");
       const row = el("div", "month grid");
-      row.appendChild(el("div", "label", new Date(+y, +mo - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" })));
+      row.append(el("div", "label", new Date(+y, +mo - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" })), el("div", "rule"));
       listEl.appendChild(row);
       lastMonth = month;
     }
