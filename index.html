@@ -47,13 +47,12 @@ button, input, textarea { font: inherit; color: inherit; }
 /* Haarlinien – liegen als Raster hinter allem */
 .rules { position: absolute; inset: 0; pointer-events: none; }
 .rules i { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
-.rules .r-month { top: var(--head); }
-.rules .r-a { top: calc(var(--head) + 28px); }
+.rules .r-date, .rules .r-a { top: calc(var(--head) + 28px); }
 
 /* Kopf */
 .top { height: var(--head); border-bottom: 1px solid var(--line); }
 .top .compose { grid-column: 3 / 6; align-self: end; padding-bottom: 10px; }
-.top .count { grid-column: 6 / 8; padding-top: 8px; text-align: center; }
+.top .count { grid-column: 2 / 4; grid-row: 1; padding-top: 8px; white-space: pre-line; }
 #text {
   width: 100%; border: 0; background: transparent; padding: 0; border-radius: 0;
   font-size: 22px; letter-spacing: -.01em; -webkit-appearance: none;
@@ -119,6 +118,11 @@ button, input, textarea { font: inherit; color: inherit; }
 .ylist button[aria-current="true"] span { text-decoration: underline; text-underline-offset: 3px; }
 .ylist button:hover { color: var(--ink); }
 .back-view .yearsbar { display: none; }
+/* solange die jahre offen sind, verschwindet der rest */
+.yopen #app { display: none; }
+.yopen .top .compose { visibility: hidden; }
+.yopen .rules .r-date, .yopen .rules .r-a { display: none; }
+.yopen .rules .r-month { bottom: auto; height: var(--head); }
 @media (prefers-reduced-motion: reduce) {
   .burger i, .ylist, .ylist li::after { transition: none !important; }
 }
@@ -173,7 +177,7 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
   :root { --cols: 74px minmax(0, 1fr) minmax(0, 1fr); --head: auto; }
   .rules { display: none; }
   .top { height: auto; display: grid; grid-template-columns: 1fr auto; row-gap: 96px; padding: 10px 0 10px; }
-  .top .count { grid-column: 2; grid-row: 1; padding-top: 0; text-align: right; }
+  .top .count { grid-column: 1; grid-row: 1; padding-top: 0; }
   .top .compose, .top .backtitle { grid-column: 1 / -1; grid-row: 2; }
   .tools .nav { grid-column: 3; gap: 0; border-left: 0; }
   .nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 6px; }
@@ -200,7 +204,6 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
   .burger i:nth-child(2) { top: 21px; }
   .burger i:nth-child(3) { top: 26px; }
   .yopen .burger { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 7px); }
-  .top .count { padding-right: 40px; }
   .ylist {
     position: fixed; inset: 0; z-index: 1; overflow-y: auto; background: var(--bg);
     padding: calc(env(safe-area-inset-top, 0px) + 64px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
@@ -256,7 +259,8 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
     <div class="compose" id="compose">
       <input type="text" id="text" placeholder="was war heute schön?" autocomplete="off" enterkeyhint="done" aria-label="Moment eintragen">
     </div>
-    <div class="count label" id="count">0 momente</div>
+    <div class="count label" id="count">gute dinge
+des tages</div>
   </header>
 
   <div id="app">
@@ -535,7 +539,7 @@ function render() {
   listEl.textContent = "";
   // gezählt wird jeder mit Komma getrennte Moment einzeln
   const n = rows.reduce((sum, r) => sum + r.text.split(",").filter((s) => s.trim()).length, 0);
-  $("#count").textContent = n + (n === 1 ? " moment" : " momente");
+  $("#count").textContent = n + " gute dinge\ndes tages";
   renderYears();
   if (view === "back") { renderBack(); return; }
 
@@ -617,7 +621,7 @@ function renderYears() {
 function showYear(y) {
   shownYear = y; editing = null;
   render();
-  if (mobile.matches) closeYears();
+  closeYears();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function openYears() {
@@ -698,10 +702,4 @@ function startApp() {
 }
 if (Store.ready()) startApp(); else showSetup();
 
-// App-Dateien fürs Öffnen ohne Netz auf dem Gerät speichern (nur über https, also auf GitHub Pages)
-if ("serviceWorker" in navigator && location.protocol === "https:") {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
-}
-</script>
-</body>
-</html>
+// App-Dateien fürs Öffnen ohne Netz auf dem Gerät speichern (nur über https, also auf
