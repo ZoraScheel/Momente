@@ -702,4 +702,10 @@ function startApp() {
 }
 if (Store.ready()) startApp(); else showSetup();
 
-// App-Dateien fürs Öffnen ohne Netz auf dem Gerät speichern (nur über https, also auf
+// App-Dateien fürs Öffnen ohne Netz auf dem Gerät speichern (nur über https, also auf GitHub Pages)
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
