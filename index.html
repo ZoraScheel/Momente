@@ -80,9 +80,11 @@ button, input, textarea { font: inherit; color: inherit; }
 .status { grid-column: 4 / 6; font-size: 11px; color: var(--soft); min-height: 14px; padding-top: 6px; }
 
 /* Spaltenköpfe */
-.heads { padding: 66px 0 0; }
-.heads .a { grid-column: 4; }
-.heads .b { grid-column: 5; }
+/* ANNE / HANNAH stehen in der zeile des ersten (aktuellen) monats */
+.month.first { padding-top: 66px; }
+.month .who { grid-row: 1; align-self: end; padding-bottom: 8px; }
+.month .who.a { grid-column: 4; }
+.month .who.b { grid-column: 5; }
 
 /* Liste */
 /* Jahre: Burger-Menü in der rechten Spalte */
@@ -99,25 +101,25 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .ylist { list-style: none; margin: 0; padding: 0; visibility: hidden; transition: visibility 0s linear .45s; }
 .yopen .ylist { visibility: visible; transition: none; }
-.ylist li { position: relative; height: 100px; }
-/* jede linie zieht sich von links nach rechts auf, leicht versetzt */
+.ylist li { position: relative; height: var(--yrow, 100px); }
+/* nur die linien bewegen sich: sie ziehen sich von rechts nach links auf, leicht versetzt */
 .ylist li::after {
   content: ""; position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid var(--line);
-  transform: scaleX(0); transform-origin: left center;
+  transform: scaleX(0); transform-origin: right center;
   transition: transform .2s ease; transition-delay: 0s;
 }
 .yopen .ylist li::after { transform: scaleX(1); transition: transform .6s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--i) * 45ms); }
 .ylist button {
   width: 100%; height: 100%; border: 0; background: none; padding: 0; cursor: pointer;
-  font: inherit; font-size: 22px; letter-spacing: -.01em; color: var(--ink);
-  opacity: 0; transform: translateY(6px); transition: opacity .15s ease, transform .2s ease;
+  font: inherit; font-size: 11px; color: var(--soft); opacity: 0;
 }
-.yopen .ylist button { opacity: 1; transform: none; transition: opacity .4s ease, transform .6s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--i) * 45ms + 80ms); }
-.ylist button[aria-current="true"] span { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 5px; }
-.ylist button:hover { color: var(--soft); }
+.yopen .ylist button { opacity: 1; }
+.ylist button[aria-current="true"] { color: var(--ink); }
+.ylist button[aria-current="true"] span { text-decoration: underline; text-underline-offset: 3px; }
+.ylist button:hover { color: var(--ink); }
 .back-view .yearsbar { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .burger i, .ylist, .ylist li::after, .ylist button { transition: none !important; }
+  .burger i, .ylist, .ylist li::after { transition: none !important; }
 }
 
 /* Monat: Name, darunter eine Linie, die den Monat abgrenzt */
@@ -181,9 +183,10 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
   .tools { border-bottom: 1px solid var(--line); }
   .tools > * { border-bottom: 0; }
   .status, .empty, .setup .box, footer .f { grid-column: 1 / -1; }
-  .heads { padding-top: 40px; }
-  .heads .a { grid-column: 2; }
-  .heads .b { grid-column: 3; }
+  .month.first { padding-top: 40px; }
+  .month.first .label { grid-column: 1; }
+  .month .who.a { grid-column: 2; }
+  .month .who.b { grid-column: 3; }
   .month .label { grid-column: 1 / -1; }
   .month .rule { grid-column: 1 / -1; }
   /* Jahre auf dem Handy: Burger oben rechts, Liste als ganze Seite */
@@ -200,7 +203,8 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
     position: fixed; inset: 0; z-index: 1; overflow-y: auto; background: var(--bg);
     padding: calc(env(safe-area-inset-top, 0px) + 64px) 14px calc(env(safe-area-inset-bottom, 0px) + 24px);
   }
-  .ylist li { height: 72px; }
+  .ylist li { height: 64px; }
+  .ylist button { font-size: 13px; }
   .day .date { grid-column: 1; }
   .day .col { grid-column: 2; }
   .day .col + .col { grid-column: 3; }
@@ -268,10 +272,6 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
     </div>
     <div class="grid"><div class="status" id="status" aria-live="polite"></div></div>
 
-    <div class="heads grid">
-      <div class="a label" id="headA"></div>
-      <div class="b label" id="headB"></div>
-    </div>
     <div id="list"></div>
 
     <footer class="grid"><div class="f"><span id="mode"></span><button type="button" id="logout">abmelden</button></div></footer>
@@ -506,7 +506,7 @@ function renderBack() {
   sections.forEach(([label, key]) => {
     const items = rows.filter((r) => r.date === key);
     if (!items.length) return;
-    const head = el("div", "month grid"); head.append(el("div", "label", label), el("div", "rule"));
+    const head = monthRow(label, !shown);
     const row = el("section", "day grid");
     row.appendChild(el("div", "date", dayLabel(key) + key.slice(2, 4)));   // mit jahr, z. B. "So 05.10.25"
     row.append(column(key, items, A, true), column(key, items, B, true));
@@ -518,6 +518,15 @@ function renderBack() {
     g.appendChild(el("div", "back-empty", selected === ago(0) ? "an diesem tag gibt es noch keine erinnerungen. in einem monat steht hier der erste rückblick." : "zu diesem tag gibt es noch keine erinnerungen."));
     listEl.appendChild(g);
   }
+}
+
+// monatszeile: name + linie; die erste zeile trägt zusätzlich ANNE und HANNAH
+function monthRow(text, first) {
+  const row = el("div", "month grid" + (first ? " first" : ""));
+  row.appendChild(el("div", "label", text));
+  if (first) row.append(el("div", "who a label", A), el("div", "who b label", B));
+  row.appendChild(el("div", "rule"));
+  return row;
 }
 
 function render() {
@@ -543,9 +552,7 @@ function render() {
     const month = key.slice(0, 7);
     if (month !== lastMonth) {
       const [y, mo] = month.split("-");
-      const row = el("div", "month grid");
-      row.append(el("div", "label", new Date(+y, +mo - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" })), el("div", "rule"));
-      listEl.appendChild(row);
+      listEl.appendChild(monthRow(new Date(+y, +mo - 1, 1).toLocaleDateString("de-DE", { month: "long", year: "numeric" }), !lastMonth));
       lastMonth = month;
     }
     const items = byDay.get(key).slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
@@ -554,6 +561,7 @@ function render() {
     row.append(column(key, items, A), column(key, items, B));
     listEl.appendChild(row);
   });
+  requestAnimationFrame(alignYears);
   if (!days.length) {
     const g = el("div", "grid");
     g.appendChild(el("div", "empty", rows.length ? "in " + shownYear + " gibt es keine einträge." : "noch nichts eingetragen."));
@@ -562,6 +570,17 @@ function render() {
 }
 
 /* ---------- Jahre: Burger-Menü ---------- */
+// zwei jahreszeilen = abstand von der kopflinie bis zur linie unter ANNE/HANNAH
+function alignYears() {
+  if (mobile.matches) { ylist.style.removeProperty("--yrow"); return; }
+  const rule = listEl.querySelector(".month.first .rule");
+  if (!rule) return;
+  const top = $("#yearsbar").getBoundingClientRect().top;
+  const h = (rule.getBoundingClientRect().bottom - top) / 2;
+  if (h > 20) ylist.style.setProperty("--yrow", h + "px");
+}
+window.addEventListener("resize", alignYears);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(alignYears);
 let shownYear = ago(0).slice(0, 4);
 const page = $(".page"), burger = $("#burger"), ylist = $("#ylist");
 const mobile = window.matchMedia("(max-width: 820px)");
@@ -665,7 +684,7 @@ $("#logout").addEventListener("click", () => {
 let started = false;
 function startApp() {
   $("#setup").hidden = true; $("#app").hidden = false; textEl.disabled = false;
-  $("#headA").textContent = A; $("#headB").textContent = B;
+
   $("#mode").textContent = Store.isDemo ? "demo – nichts wird gespeichert" : "angemeldet als " + Store.me();
   $("#logout").hidden = Store.isDemo;
   setDate(ago(0)); rows = Store.snapshot(); showView(); refresh(true);
