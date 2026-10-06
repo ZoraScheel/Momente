@@ -187,13 +187,17 @@ const Store = (() => {
     return flushing;
   }
 
-  // Neue Änderung: sofort merken & anzeigen, dann versuchen zu senden
+  // Wer wissen will, wann im Hintergrund fertig gesendet wurde
+  const listeners = [];
+  function notify(info) { listeners.forEach((fn) => { try { fn(info); } catch (e) {} }); }
+
+  // Neue Änderung: sofort merken & anzeigen – gesendet wird im Hintergrund.
+  // So muss niemand auf GitHub warten; offline bleibt sie in der Warteschlange.
   async function enqueue(op) {
     if (isDemo) { applyOp(data.moments, op); return view(); }
     queue.push(op);
     saveQueue();
-    try { await flush(); }
-    catch (e) { if (!retryable(e)) throw e; }   // offline: bleibt in der Warteschlange
+    flush().then(() => notify({ ok: true }), (e) => notify({ ok: false, error: e }));
     return view();
   }
 
@@ -226,6 +230,7 @@ const Store = (() => {
     me() { return isDemo ? CONFIG.people[0] : local.get(KEY_ME); },
     ready() { return isDemo || (!!local.get(KEY_TOKEN) && CONFIG.people.includes(local.get(KEY_ME))); },
     pending() { return queue.length; },        // wie viele Änderungen noch warten
+    onSync(fn) { listeners.push(fn); },        // meldet, wenn im Hintergrund gesendet wurde
     snapshot() { return view(); },             // sofort anzeigbar, auch offline
 
     // Einmalige Einrichtung auf jedem Handy
