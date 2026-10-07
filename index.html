@@ -143,6 +143,9 @@ button, input, textarea { font: inherit; color: inherit; }
 .col.mine button.text { cursor: pointer; }
 .col.mine button.text:hover { color: var(--soft); }
 .col .none { color: var(--line); }
+.col button.none { all: unset; color: var(--line); cursor: pointer; padding-right: 24px; }
+.col button.none:hover { color: var(--soft); }
+.col button.none:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 /* neu: punkt hinter einträgen der anderen, die man noch nicht gesehen hat */
 .col .new { display: inline-block; width: 6px; height: 6px; margin-left: 10px; border-radius: 50%; background: #f2c063; vertical-align: middle; position: relative; top: -1px; }
 .col textarea.edit {
@@ -229,6 +232,7 @@ footer button { border: 0; background: none; padding: 0; color: var(--soft); cur
 
   .col.mine button.text { display: block; padding: 14px 0; margin: -14px 0; }
   .col.mine .none { display: block; }
+  .col.mine button.none { padding: 14px 0; margin: -14px 0; }
 
   .actions { gap: 4px; margin-top: 2px; font-size: 12px; }
   .actions button { min-height: 44px; padding: 0 10px; }
@@ -462,7 +466,17 @@ function column(date, items, who, readonly) {
   const text = items.filter((m) => m.author === who).map((m) => m.text).join(", ");
   if (mine && editing === date) { col.appendChild(editor(date, text)); return col; }
   if (!text) {
-    col.appendChild(el("span", "none", "—"));
+    if (!mine) { col.appendChild(el("span", "none", "—")); return col; }
+    // eigener leerer tag: antippen → nach oben, tag ist gewählt, gleich lostippen
+    const b = el("button", "none", "—");
+    b.type = "button"; b.title = "Für diesen Tag eintragen";
+    b.setAttribute("aria-label", "Für " + dayLabel(date) + " eintragen");
+    b.addEventListener("click", () => {
+      setDate(date);
+      textEl.focus({ preventScroll: true });            // im selben tipp, sonst öffnet iOS die tastatur nicht
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    col.appendChild(b);
     return col;
   }
   const t = el("button", "text", text);
