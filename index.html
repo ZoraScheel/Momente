@@ -143,6 +143,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .col.mine button.text { cursor: pointer; }
 .col.mine button.text:hover { color: var(--soft); }
 .col .none { color: var(--line); }
+/* neu: punkt hinter einträgen der anderen, die man noch nicht gesehen hat */
+.col .new { display: inline-block; width: 6px; height: 6px; margin-left: 10px; border-radius: 50%; background: #f2c063; vertical-align: middle; position: relative; top: -1px; }
 .col textarea.edit {
   display: block; width: 100%; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0;
   background: transparent; padding: 0 0 2px; resize: none; overflow: hidden; line-height: inherit; -webkit-appearance: none;
@@ -467,9 +469,33 @@ function column(date, items, who, readonly) {
   t.type = "button";
   if (mine) { t.title = "Tippen zum Bearbeiten"; t.addEventListener("click", () => { editing = date; render(); }); }
   else t.tabIndex = -1;
-  const p = el("p", "line"); p.appendChild(t); col.appendChild(p);
+  const p = el("p", "line"); p.appendChild(t);
+  if (!readonly && who !== Store.me()) {
+    const s = items.filter((m) => m.author === who).reduce((max, m) => (stamp(m) > max ? stamp(m) : max), "");
+    if (s > newestShown) newestShown = s;
+    if (seenBase !== null && s > seenBase) {
+      const dot = el("span", "new"); dot.setAttribute("role", "img"); dot.setAttribute("aria-label", "neu");
+      p.appendChild(dot);
+    }
+  }
+  col.appendChild(p);
   return col;
 }
+
+/* ---------- Neu-Markierung ---------- */
+// Pro Gerät wird gemerkt, bis zu welchem Zeitpunkt man die Einträge der anderen gesehen hat.
+// Der Punkt bleibt während des ganzen Besuchs stehen und ist beim nächsten Öffnen weg.
+function stamp(m) { return m.editedAt || m.createdAt || ""; }
+function seenKey() { return "momente.seen." + Store.me(); }
+function readSeen() { try { return localStorage.getItem(seenKey()); } catch (e) { return null; } }
+let seenBase = null;        // stand beim öffnen; null = erstes mal auf diesem gerät → keine punkte
+let newestShown = "";       // neuester eintrag der anderen, der gerade angezeigt wird
+function rememberSeen() {
+  if (Store.isDemo || !newestShown || document.hidden) return;
+  const old = readSeen() || "";
+  if (newestShown > old) try { localStorage.setItem(seenKey(), newestShown); } catch (e) {}
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) seenBase = readSeen(); });
 
 /* ---------- Seiten ---------- */
 let view = location.hash === "#rueckblick" ? "back" : "list";
@@ -542,6 +568,7 @@ function render() {
   $("#count").textContent = n + " gute dinge\ndes tages";
   renderYears();
   if (view === "back") { renderBack(); return; }
+  newestShown = "";
 
   // nur das gewählte jahr anzeigen
   const byDay = new Map();
@@ -567,6 +594,7 @@ function render() {
     row.append(column(key, items, A), column(key, items, B));
     listEl.appendChild(row);
   });
+  rememberSeen();
   requestAnimationFrame(alignYears);
   if (!days.length) {
     const g = el("div", "grid");
@@ -693,6 +721,7 @@ function startApp() {
 
   $("#mode").textContent = Store.isDemo ? "demo – nichts wird gespeichert" : "angemeldet als " + Store.me();
   $("#logout").hidden = Store.isDemo;
+  seenBase = readSeen();
   setDate(ago(0)); rows = Store.snapshot(); showView(); refresh(true);
   if (started) return;
   started = true;
